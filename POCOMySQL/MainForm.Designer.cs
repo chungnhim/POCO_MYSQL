@@ -41,6 +41,11 @@
             this.openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
             this.cmdConvertImageToBase64 = new System.Windows.Forms.Button();
             this.cmdResizeImage = new System.Windows.Forms.Button();
+            this.btnExportFile = new System.Windows.Forms.Button();
+            this.txtNameSpace = new System.Windows.Forms.TextBox();
+            this.label2 = new System.Windows.Forms.Label();
+            this.btnGenerateDtos = new System.Windows.Forms.Button();
+            this.btnGenerateModel = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // cbTableName
@@ -79,7 +84,7 @@
             this.txtClass.Location = new System.Drawing.Point(12, 98);
             this.txtClass.Multiline = true;
             this.txtClass.Name = "txtClass";
-            this.txtClass.Size = new System.Drawing.Size(730, 422);
+            this.txtClass.Size = new System.Drawing.Size(720, 554);
             this.txtClass.TabIndex = 3;
             // 
             // cmdConnectDatabase
@@ -166,11 +171,58 @@
             this.cmdResizeImage.UseVisualStyleBackColor = true;
             this.cmdResizeImage.Click += new System.EventHandler(this.cmdResizeImage_Click);
             // 
+            // btnExportFile
+            // 
+            this.btnExportFile.Location = new System.Drawing.Point(741, 222);
+            this.btnExportFile.Name = "btnExportFile";
+            this.btnExportFile.Size = new System.Drawing.Size(176, 23);
+            this.btnExportFile.TabIndex = 12;
+            this.btnExportFile.Text = "Export All File";
+            this.btnExportFile.UseVisualStyleBackColor = true;
+            this.btnExportFile.Click += new System.EventHandler(this.btnExportFile_Click);
+            // 
+            // txtNameSpace
+            // 
+            this.txtNameSpace.Location = new System.Drawing.Point(813, 98);
+            this.txtNameSpace.Name = "txtNameSpace";
+            this.txtNameSpace.Size = new System.Drawing.Size(280, 20);
+            this.txtNameSpace.TabIndex = 13;
+            // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(738, 101);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(69, 13);
+            this.label2.TabIndex = 1;
+            this.label2.Text = "Name Space";
+            // 
+            // btnGenerateDtos
+            // 
+            this.btnGenerateDtos.Location = new System.Drawing.Point(741, 148);
+            this.btnGenerateDtos.Name = "btnGenerateDtos";
+            this.btnGenerateDtos.Size = new System.Drawing.Size(143, 23);
+            this.btnGenerateDtos.TabIndex = 2;
+            this.btnGenerateDtos.Text = "Generate Dtos";
+            this.btnGenerateDtos.UseVisualStyleBackColor = true;
+            this.btnGenerateDtos.Click += new System.EventHandler(this.btnGenerateDtos_Click);
+            // 
+            // btnGenerateModel
+            // 
+            this.btnGenerateModel.Location = new System.Drawing.Point(741, 177);
+            this.btnGenerateModel.Name = "btnGenerateModel";
+            this.btnGenerateModel.Size = new System.Drawing.Size(143, 23);
+            this.btnGenerateModel.TabIndex = 2;
+            this.btnGenerateModel.Text = "Generate Model";
+            this.btnGenerateModel.UseVisualStyleBackColor = true;
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(755, 532);
+            this.ClientSize = new System.Drawing.Size(1105, 664);
+            this.Controls.Add(this.txtNameSpace);
+            this.Controls.Add(this.btnExportFile);
             this.Controls.Add(this.cmdResizeImage);
             this.Controls.Add(this.cmdConvertImageToBase64);
             this.Controls.Add(this.cmdGenerateMySQLCommand);
@@ -180,7 +232,10 @@
             this.Controls.Add(this.cmdGenerateInsert);
             this.Controls.Add(this.cmdConnectDatabase);
             this.Controls.Add(this.txtClass);
+            this.Controls.Add(this.btnGenerateModel);
+            this.Controls.Add(this.btnGenerateDtos);
             this.Controls.Add(this.cmdGenerateClass);
+            this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.cbTableName);
             this.Name = "MainForm";
@@ -206,6 +261,11 @@
         private System.Windows.Forms.OpenFileDialog openFileDialog1;
         private System.Windows.Forms.Button cmdConvertImageToBase64;
         private System.Windows.Forms.Button cmdResizeImage;
+        private System.Windows.Forms.Button btnExportFile;
+        private System.Windows.Forms.TextBox txtNameSpace;
+        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.Button btnGenerateDtos;
+        private System.Windows.Forms.Button btnGenerateModel;
     }
 }
 
