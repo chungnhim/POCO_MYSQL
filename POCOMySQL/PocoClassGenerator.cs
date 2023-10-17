@@ -683,7 +683,7 @@ namespace POCOMySQL
             builderView.AppendLine($"\t\t\tpublic Task<int> Insert{tableSelect}({nameDtoModel} obj{nameDtoModel});");
             builderView.AppendLine($"\t\t\tpublic Task<int> Update{tableSelect}({nameDtoModel} obj{nameDtoModel});");
             builderView.AppendLine($"\t\t\tpublic Task<int> Delete{tableSelect}(int id);");
-            builderView.AppendLine($"\t\t\tpublic Task<Tuple<int, List<{nameViewModel}>>> Get{tableSelect}Search(FilterTableParams tableParams, string search = \"\", DateTime? fromDate = null, DateTime? toDate = null);");
+            builderView.AppendLine($"\t\t\tpublic Task<DataTableViewModel<{nameViewModel}>> Get{tableSelect}Search(FilterTableParams tableParams, string search = \"\", DateTime? fromDate = null, DateTime? toDate = null);");
             builderView.AppendLine("\t\t}");
 
             builderView.AppendLine($"\t\tpublic class {tableSelect}Service : I{tableSelect}Service");
@@ -695,7 +695,7 @@ namespace POCOMySQL
             builderView.AppendLine("\t\t\t\tthis.repository = repository;");
             builderView.AppendLine("\t\t\t}");
             //function get
-            builderView.AppendLine($"\t\t\tpublic Task<{nameDtoModel}> Get{tableSelect}ById(int id)");
+            builderView.AppendLine($"\t\t\tpublic async Task<{nameDtoModel}> Get{tableSelect}ById(int id)");
             builderView.AppendLine("\t\t\t{");
             builderView.AppendLine("\t\t\t\tusing (var dbContext = await repository.OpenConnectionAsync())");
             builderView.AppendLine("\t\t\t\t{");
@@ -706,7 +706,7 @@ namespace POCOMySQL
             //end function get
 
             //function insert
-            builderView.AppendLine($"\t\t\tpublic Task<int> Insert{tableSelect}({nameDtoModel} obj{nameDtoModel})");
+            builderView.AppendLine($"\t\t\tpublic async Task<int> Insert{tableSelect}({nameDtoModel} obj{nameDtoModel})");
             builderView.AppendLine("\t\t\t{");
             builderView.AppendLine("\t\t\t\tusing (var dbContext = await repository.OpenConnectionAsync())");
             builderView.AppendLine("\t\t\t\t{");
@@ -720,7 +720,7 @@ namespace POCOMySQL
             //end function insert
 
             //function update
-            builderView.AppendLine($"\t\t\tpublic Task<int> Update{tableSelect}({nameDtoModel} obj{nameDtoModel})");
+            builderView.AppendLine($"\t\t\tpublic async Task<int> Update{tableSelect}({nameDtoModel} obj{nameDtoModel})");
             builderView.AppendLine("\t\t\t{");
             builderView.AppendLine("\t\t\t\tusing (var dbContext = await repository.OpenConnectionAsync())");
             builderView.AppendLine("\t\t\t\t{");
@@ -734,18 +734,18 @@ namespace POCOMySQL
             //end function update
 
             //function delete
-            builderView.AppendLine($"\t\t\tpublic Task<int> Delete{tableSelect}({nameDtoModel} obj{nameDtoModel})");
+            builderView.AppendLine($"\t\t\tpublic async Task<int> Delete{tableSelect}(int id)");
             builderView.AppendLine("\t\t\t{");
             builderView.AppendLine("\t\t\t\tusing (var dbContext = await repository.OpenConnectionAsync())");
             builderView.AppendLine("\t\t\t\t{");
             builderView.AppendLine($"\t\t\t\t\t var query = @\"DELETE FROM {tableSelect.ToLower()} where id=@id\";");
-            builderView.AppendLine($"\t\t\t\t\t return await dbContext.ExecuteAsync(query, obj{nameDtoModel});");
+            builderView.AppendLine($"\t\t\t\t\t return await dbContext.ExecuteAsync(query, new {{@id = id}});");
             builderView.AppendLine("\t\t\t\t}");
             builderView.AppendLine("\t\t\t}");
             //end function delete
 
             //function search
-            builderView.AppendLine($"\t\t\tpublic Task<Tuple<int, List<{nameViewModel}>>> Get{tableSelect}Search(FilterTableParams tableParams, string search = \"\", DateTime? fromDate = null, DateTime? toDate = null);");
+            builderView.AppendLine($"\t\t\tpublic async Task<DataTableViewModel<{nameViewModel}>> Get{tableSelect}Search(FilterTableParams tableParams, string search = \"\", DateTime? fromDate = null, DateTime? toDate = null)");
             builderView.AppendLine("\t\t\t{");
             builderView.AppendLine("\t\t\t\tusing (var dbContext = await repository.OpenConnectionAsync())");
             builderView.AppendLine("\t\t\t\t{");
@@ -788,17 +788,16 @@ namespace POCOMySQL
             builderView.AppendLine($"\t\t\t\t\tsearchStr = \" WHERE \" + searchStr;");
             builderView.AppendLine($"\t\t\t\t\t}}");
 
-            builderView.AppendLine($"\t\t\t\t\t var query = @\"SELECT t1.* FROM {tableSelect.ToLower()} t1 {{searchStr}} {{sortStr}} {{fetchStr}};" +
-                                    $"  SELECT COUNT(1) FROM {tableSelect.ToLower()} t1 {{searchStr}}; \";");
+            builderView.AppendLine($"\t\t\t\t\t var query = @$\"SELECT t1.* FROM {tableSelect.ToLower()} t1 {{searchStr}} {{sortStr}} {{fetchStr}};" +
+                                    $"  \r\n \t\t\t\t\t\t SELECT COUNT(1) FROM {tableSelect.ToLower()} t1 {{searchStr}}; \";");
 
-            builderView.AppendLine($"\t\t\t\t\tvar result = dbContext.QueryMultiple(sql, new {{@search = search, @FromDate = fromDate.Value.Date, @ToDate = toDate.Value.Date.AddDays(1)}});");
+            builderView.AppendLine($"\t\t\t\t\tvar result = dbContext.QueryMultiple(query, new {{@search = search, @FromDate = fromDate.Value.Date, @ToDate = toDate.Value.Date.AddDays(1)}});");
 
             builderView.AppendLine($"\t\t\t\t\tvar list = result.Read<{nameViewModel}>().ToList();");
             builderView.AppendLine($"\t\t\t\t\tvar total = result.Read<int>().FirstOrDefault();");
             builderView.AppendLine($"\t\t\t\t\tvar tuple = new Tuple<int, List<{nameViewModel}>>(total, list);");
 
-
-            builderView.AppendLine($"\t\t\t\t\t return tuple;");
+            builderView.AppendLine($"\t\t\t\t\t  return new DataTableViewModel<{nameViewModel}>(tableParams.draw, tuple.Item1, tuple.Item1, tuple.Item2);");
             builderView.AppendLine("\t\t\t\t}");
             builderView.AppendLine("\t\t\t}");
             //end function search
@@ -846,13 +845,13 @@ namespace POCOMySQL
             builderView.AppendLine("\t\t{");
             //contructor
             builderView.AppendLine($"\t\t\tprivate readonly ILogger<{tableSelect}Controller> _logger;");
-            builderView.AppendLine($"\t\t\tprivate readonly I{tableSelect}Service {tableSelect.ToLower()}Service;");
+            builderView.AppendLine($"\t\t\tprivate readonly I{tableSelect}Service _{tableSelect.ToLower()}Service;");
             builderView.AppendLine("\t\t\tprivate readonly IMapper mapper;");
-            builderView.AppendLine($"\t\t\tpublic MerchantController(I{tableSelect}Service _{tableSelect.ToLower()}Service, ILogger<{tableSelect}Controller> _logger, IMapper _mapper, IHttpContextAccessor _httpContextAccessor)");
+            builderView.AppendLine($"\t\t\tpublic {tableSelect}Controller(I{tableSelect}Service {tableSelect.ToLower()}Service, ILogger<{tableSelect}Controller> _logger, IMapper _mapper, IHttpContextAccessor _httpContextAccessor)");
             builderView.AppendLine("\t\t\t{");
             builderView.AppendLine("\t\t\t\t _logger = _logger;");
             builderView.AppendLine("\t\t\t\tthis.mapper = _mapper;");
-            builderView.AppendLine($"\t\t\t\tthis.{tableSelect.ToLower()}Service = _{tableSelect.ToLower()}Service;");
+            builderView.AppendLine($"\t\t\t\tthis._{tableSelect.ToLower()}Service = {tableSelect.ToLower()}Service;");
             builderView.AppendLine("\t\t\t}");
             builderView.AppendLine("\t\t\t");
 
@@ -880,7 +879,7 @@ namespace POCOMySQL
             builderView.AppendLine("\t\t\t{");
             builderView.AppendLine("\t\t\t\tif (id == null || (id.HasValue && id.Value < 0))");
             builderView.AppendLine($"\t\t\t\treturn this.RedirectToAction(\"NotFound\", \"ErrorPage\");");
-            builderView.AppendLine($"\t\t\t\tvar objModel = await _{tableSelect.ToLower()}Service.Get{tableSelect}ById(id);");
+            builderView.AppendLine($"\t\t\t\tvar objModel = await _{tableSelect.ToLower()}Service.Get{tableSelect}ById(id.Value);");
             builderView.AppendLine($"\t\t\t\treturn View(objModel);");
             builderView.AppendLine("\t\t\t}");
             //end View function
@@ -895,7 +894,7 @@ namespace POCOMySQL
 
             builderView.AppendLine("[HttpPost]");
             builderView.AppendLine("[ValidateAntiForgeryToken]");
-            builderView.AppendLine($"\t\t\tpublic IActionResult Create{tableSelect}({nameCreateModel} model)");
+            builderView.AppendLine($"\t\t\tpublic async Task<IActionResult> Create{tableSelect}({nameCreateModel} model)");
             builderView.AppendLine("\t\t\t{");
             builderView.AppendLine($"\t\t\t\tif (ModelState.IsValid)");
             builderView.AppendLine($"\t\t\t\t{{");
@@ -903,7 +902,7 @@ namespace POCOMySQL
             builderView.AppendLine($"\t\t\t\t\t var user = User;");
             builderView.AppendLine($"\t\t\t\t\t var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier);");
             builderView.AppendLine($"\t\t\t\t\t var usernameClaim = user.FindFirst(ClaimTypes.Name);");
-            builderView.AppendLine($"\t\t\t\t\t var userId = user.FindFirst(CustomClaimTypes.UserId).Value;");
+            builderView.AppendLine($"\t\t\t\t\t var userId = user.FindFirst(CustomClaimTypes.MerchantId).Value;");
 
             builderView.AppendLine($"\t\t\t\t\t var dto = mapper.Map<{nameCreateModel}, {nameDtoModel}>(model);");
             builderView.AppendLine($"\t\t\t\t\t dto.CreatedByUserID = Convert.ToInt32(userId);");
@@ -921,19 +920,19 @@ namespace POCOMySQL
 
             //Update function
             builderView.AppendLine("[HttpGet]");
-            builderView.AppendLine($"\t\t\tpublic IActionResult Edit{tableSelect}()");
+            builderView.AppendLine($"\t\t\tpublic async Task<IActionResult> Edit{tableSelect}(int? id)");
             builderView.AppendLine("\t\t\t{");
             builderView.AppendLine("\t\t\t\tif (id == null || (id.HasValue && id.Value < 0))");
             builderView.AppendLine($"\t\t\t\treturn this.RedirectToAction(\"NotFound\", \"ErrorPage\");");
 
-            builderView.AppendLine($"\t\t\t\tvar dto = await _{tableSelect.ToLower()}Service.Get{tableSelect}ById(id);");
+            builderView.AppendLine($"\t\t\t\tvar dto = await _{tableSelect.ToLower()}Service.Get{tableSelect}ById(id.Value);");
             builderView.AppendLine($"\t\t\t\tvar objModel = mapper.Map<{nameDtoModel}, {nameEditModel}>(dto);");
             builderView.AppendLine($"\t\t\t\treturn View(objModel);");
             builderView.AppendLine("\t\t\t}");
 
             builderView.AppendLine("[HttpPost]");
             builderView.AppendLine("[ValidateAntiForgeryToken]");
-            builderView.AppendLine($"\t\t\tpublic IActionResult Edit{tableSelect}({nameEditModel} model)");
+            builderView.AppendLine($"\t\t\tpublic async Task<IActionResult> Edit{tableSelect}({nameEditModel} model)");
             builderView.AppendLine("\t\t\t{");
             builderView.AppendLine($"\t\t\t\tif (ModelState.IsValid)");
             builderView.AppendLine($"\t\t\t\t{{");
@@ -941,7 +940,7 @@ namespace POCOMySQL
             builderView.AppendLine($"\t\t\t\t\t var user = User;");
             builderView.AppendLine($"\t\t\t\t\t var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier);");
             builderView.AppendLine($"\t\t\t\t\t var usernameClaim = user.FindFirst(ClaimTypes.Name);");
-            builderView.AppendLine($"\t\t\t\t\t var userId = user.FindFirst(CustomClaimTypes.UserId).Value;");
+            builderView.AppendLine($"\t\t\t\t\t var userId = user.FindFirst(CustomClaimTypes.MerchantId).Value;");
 
             builderView.AppendLine($"\t\t\t\t\t var dto = mapper.Map<{nameEditModel}, {nameDtoModel}>(model);");
             builderView.AppendLine($"\t\t\t\t\t dto.UpdatedByUserID = Convert.ToInt32(userId);");
@@ -963,8 +962,8 @@ namespace POCOMySQL
             builderView.AppendLine($"\t\t\tpublic async Task<JsonResult> Delete{tableSelect}(int? id)");
             builderView.AppendLine("\t\t\t{");
             builderView.AppendLine("\t\t\t\tif (id == null || (id.HasValue && id.Value < 0))");
-            builderView.AppendLine($"\t\t\t\treturn ErrorModelToClient(\"Delete {tableSelect} select not success.\");");
-            builderView.AppendLine($"\t\t\t\tvar objModel = await _{tableSelect.ToLower()}Service.Delete{tableSelect}(id);");
+            builderView.AppendLine($"\t\t\t\treturn ErrorToClient(\"Delete {tableSelect} select not success.\");");
+            builderView.AppendLine($"\t\t\t\tvar objModel = await _{tableSelect.ToLower()}Service.Delete{tableSelect}(id.Value);");
             builderView.AppendLine($"\t\t\t\treturn SuccessToClient(\"Delete {tableSelect} select successfully.\");");
             builderView.AppendLine("\t\t\t}");
             //end Delete function
@@ -972,6 +971,266 @@ namespace POCOMySQL
             builderView.AppendLine("\t\t}");
             return builderView.ToString();
 
+        }
+
+        public static string GenerateClassCreateCSHtmlToFile(this IDbConnection connection, string sql, string className = null, GeneratorBehavior generatorBehavior = GeneratorBehavior.Default)
+        {
+            if (connection.State != ConnectionState.Open) connection.Open();
+
+            var builder = new StringBuilder();
+            var tableSelect = "";
+            //Get Table Name
+            //Fix : [When View using CommandBehavior.KeyInfo will get duplicate columns ¡P Issue #8 ¡P shps951023/PocoClassGenerator](https://github.com/shps951023/PocoClassGenerator/issues/8 )
+            var isFromMutiTables = false;
+            using (var command = connection.CreateCommand(sql))
+            using (var reader = command.ExecuteReader(CommandBehavior.KeyInfo | CommandBehavior.SingleRow))
+            {
+                var tables = reader.GetSchemaTable().Select().Select(s => s["BaseTableName"] as string).Distinct();
+                var tableName = string.IsNullOrWhiteSpace(className) ? tables.First() ?? "Info" : className;
+
+                TextInfo textInfo = new CultureInfo("en-US", false).TextInfo;
+                tableName = textInfo.ToTitleCase(tableName);
+                tableSelect = tableName;
+                isFromMutiTables = tables.Count() > 1;
+
+                //if (generatorBehavior.HasFlag(GeneratorBehavior.DapperContrib) && !isFromMutiTables)
+                //builder.AppendFormat("	[Dapper.Contrib.Extensions.Table(\"{0}\")]{1}", tableName, Environment.NewLine);
+                //builder.AppendFormat("	public class {0}Dto{1}", tableName.Replace(" ", ""), Environment.NewLine);
+                //builder.AppendLine("	{");
+            }
+
+            //builder.AppendLine($"@model EVSystem.Admin.Portal.Models.Stations.CreateStationModel");
+
+            builder.AppendLine($"@{{");
+            builder.AppendLine($"\tViewBag.Title = \"Admin Portal {tableSelect}\";");
+            builder.AppendLine($"\tViewBag.pageTitle = \"{tableSelect}\";");
+            builder.AppendLine($"\tViewBag.pTitle = \"Create {tableSelect} Information\";");
+            builder.AppendLine($"\tLayout = \"~/Views/Shared/_Layout.cshtml\";");
+            builder.AppendLine($"}}");
+
+            builder.AppendLine($"<div class=\"row\">");
+            builder.AppendLine($"\t<div class=\"col-lg-12\">");
+            builder.AppendLine($"\t\t<div class=\"card\">");
+            builder.AppendLine($"\t\t\t<div class=\"card-body\">");
+            builder.AppendLine($"\t\t\t\t<div class=\"form-group row mb-4\">\r\n                    <label class=\"card-title col-sm-6 col-form-label\">{tableSelect} Information</label>\r\n                </div>");
+            builder.AppendLine($"\t\t\t\t@using (Html.BeginForm(\"Create{tableSelect}\", \"{tableSelect}\", FormMethod.Post, new {{ id = \"FormCreate{tableSelect}Information\", @class = \"needs-validation\", novalidate = \"novalidate\" }}))");
+            builder.AppendLine($"\t\t\t\t{{");
+            builder.AppendLine($"\t\t\t\t\t@Html.AntiForgeryToken()");
+
+
+            //Get Columns 
+            var behavior = isFromMutiTables ? (CommandBehavior.SchemaOnly | CommandBehavior.SingleRow) : (CommandBehavior.KeyInfo | CommandBehavior.SingleRow);
+
+            using (var command = connection.CreateCommand(sql))
+            using (var reader = command.ExecuteReader(behavior))
+            {
+                do
+                {
+                    var schema = reader.GetSchemaTable();
+                    foreach (DataRow row in schema.Rows)
+                    {
+                        var type = (Type)row["DataType"];
+                        var name = TypeAliases.ContainsKey(type) ? TypeAliases[type] : type.FullName;
+                        var isNullable = (bool)row["AllowDBNull"] && NullableTypes.Contains(type);
+                        var collumnName = (string)row["ColumnName"];
+
+                        if (generatorBehavior.HasFlag(GeneratorBehavior.Comment) && !isFromMutiTables)
+                        {
+                            var comments = new[] { "DataTypeName", "IsUnique", "IsKey", "IsAutoIncrement", "IsReadOnly" }
+                                   .Select(s =>
+                                   {
+                                       if (row[s] is bool && ((bool)row[s]))
+                                           return s;
+                                       if (row[s] is string && !string.IsNullOrWhiteSpace((string)row[s]))
+                                           return string.Format(" {0} : {1} ", s, row[s]);
+                                       return null;
+                                   }).Where(w => w != null).ToArray();
+                            var sComment = string.Join(" , ", comments);
+
+                            builder.AppendFormat("		/// <summary>{0}</summary>{1}", sComment, Environment.NewLine);
+                        }
+
+                        if (generatorBehavior.HasFlag(GeneratorBehavior.DapperContrib) && !isFromMutiTables)
+                        {
+                            var isKey = (bool)row["IsKey"];
+                            var isAutoIncrement = (bool)row["IsAutoIncrement"];
+                            if (isKey && isAutoIncrement)
+                                builder.AppendLine("		[Dapper.Contrib.Extensions.Key]");
+                            if (isKey && !isAutoIncrement)
+                                builder.AppendLine("		[Dapper.Contrib.Extensions.ExplicitKey]");
+                            if (!isKey && isAutoIncrement)
+                                builder.AppendLine("		[Dapper.Contrib.Extensions.Computed]");
+                        }
+
+                        //builder.AppendLine(string.Format("public {0}{1} {2} {{ get; set; }}", name, isNullable ? "?" : string.Empty, collumnName));
+
+                        builder.AppendLine($"\t\t\t\t\t<div class=\"form-group row mb-4\">");
+
+                        builder.AppendLine($"\t\t\t\t\t\t<label class=\"col-sm-3 col-form-label\">{collumnName}</label>");
+                        builder.AppendLine($"\t\t\t\t\t\t<div class=\"col-sm-9\">");
+                        builder.AppendLine($"\t\t\t\t\t\t\t@Html.TextBoxFor(m => m.{collumnName}, new {{@class = \"form-control\"}})");
+                        builder.AppendLine($"\t\t\t\t\t\t\t@Html.ValidationMessageFor(m => m.{collumnName}, null, new {{@class = \"text-danger\"}})");
+                        builder.AppendLine($"\t\t\t\t\t\t</div>");
+                        builder.AppendLine($"\t\t\t\t\t </div>");
+
+                    }
+
+                    //builder.AppendLine("	}");
+                    //builder.AppendLine();
+                } while (reader.NextResult());
+
+
+                builder.AppendLine($"\t\t\t\t\t<div class=\"form-group row mb-4\">");
+
+                builder.AppendLine($"\t\t\t\t\t\t<div class=\"col-md-10\">");
+                builder.AppendLine($"\t\t\t\t\t\t\t<a href=\"@Url.Action(\"Index\",\"{tableSelect}\")\" class=\"btn btn-primary\">Back to {tableSelect} List</a>");
+                builder.AppendLine($"\t\t\t\t\t\t</div>");
+                builder.AppendLine($"\t\t\t\t\t\t<div class=\"col-md-2\">");
+                builder.AppendLine($"\t\t\t\t\t\t\t <button type=\"submit\" class=\"btn btn-primary\">\r\n                                Save\r\n                            </button>");
+                builder.AppendLine($"\t\t\t\t\t\t</div>");
+
+                builder.AppendLine($"\t\t\t\t\t </div>");
+
+                builder.AppendLine($"\t\t\t\t}}");
+
+                builder.AppendLine($"</div>\r\n        </div>\r\n    </div>\r\n</div>");
+
+                builder.AppendLine($"@section scripts{{");
+                builder.AppendLine($"<script src=\"~/assets/libs/parsleyjs/parsley.min.js\"></script>");
+                builder.AppendLine($"<script src=\"~/assets/js/pages/form-validation.init.js\"></script>");
+                builder.AppendLine($"}}");
+                return builder.ToString();
+            }
+        }
+
+        public static string GenerateClassViewCSHtmlToFile(this IDbConnection connection, string sql, string className = null, GeneratorBehavior generatorBehavior = GeneratorBehavior.Default)
+        {
+            if (connection.State != ConnectionState.Open) connection.Open();
+
+            var builder = new StringBuilder();
+            var tableSelect = "";
+            //Get Table Name
+            //Fix : [When View using CommandBehavior.KeyInfo will get duplicate columns ¡P Issue #8 ¡P shps951023/PocoClassGenerator](https://github.com/shps951023/PocoClassGenerator/issues/8 )
+            var isFromMutiTables = false;
+            using (var command = connection.CreateCommand(sql))
+            using (var reader = command.ExecuteReader(CommandBehavior.KeyInfo | CommandBehavior.SingleRow))
+            {
+                var tables = reader.GetSchemaTable().Select().Select(s => s["BaseTableName"] as string).Distinct();
+                var tableName = string.IsNullOrWhiteSpace(className) ? tables.First() ?? "Info" : className;
+
+                TextInfo textInfo = new CultureInfo("en-US", false).TextInfo;
+                tableName = textInfo.ToTitleCase(tableName);
+                tableSelect = tableName;
+                isFromMutiTables = tables.Count() > 1;
+
+                //if (generatorBehavior.HasFlag(GeneratorBehavior.DapperContrib) && !isFromMutiTables)
+                //builder.AppendFormat("	[Dapper.Contrib.Extensions.Table(\"{0}\")]{1}", tableName, Environment.NewLine);
+                //builder.AppendFormat("	public class {0}Dto{1}", tableName.Replace(" ", ""), Environment.NewLine);
+                //builder.AppendLine("	{");
+            }
+
+            //builder.AppendLine($"@model EVSystem.Admin.Portal.Models.Stations.CreateStationModel");
+
+            builder.AppendLine($"@{{");
+            builder.AppendLine($"\tViewBag.Title = \"Admin Portal {tableSelect}\";");
+            builder.AppendLine($"\tViewBag.pageTitle = \"{tableSelect}\";");
+            builder.AppendLine($"\tViewBag.pTitle = \"Create {tableSelect} Information\";");
+            builder.AppendLine($"\tLayout = \"~/Views/Shared/_Layout.cshtml\";");
+            builder.AppendLine($"}}");
+
+            builder.AppendLine($"<div class=\"row\">");
+            builder.AppendLine($"\t<div class=\"col-lg-12\">");
+            builder.AppendLine($"\t\t<div class=\"card\">");
+            builder.AppendLine($"\t\t\t<div class=\"card-body\">");
+            builder.AppendLine($"\t\t\t\t<div class=\"form-group row mb-4\">\r\n                    <label class=\"card-title col-sm-6 col-form-label\">{tableSelect} Information</label>\r\n                </div>");
+            builder.AppendLine($"\t\t\t\t@using (Html.BeginForm(\"Create{tableSelect}\", \"{tableSelect}\", FormMethod.Post, new {{ id = \"FormCreate{tableSelect}Information\", @class = \"needs-validation\", novalidate = \"novalidate\" }}))");
+            builder.AppendLine($"\t\t\t\t{{");
+            builder.AppendLine($"\t\t\t\t\t@Html.AntiForgeryToken()");
+
+
+            //Get Columns 
+            var behavior = isFromMutiTables ? (CommandBehavior.SchemaOnly | CommandBehavior.SingleRow) : (CommandBehavior.KeyInfo | CommandBehavior.SingleRow);
+
+            using (var command = connection.CreateCommand(sql))
+            using (var reader = command.ExecuteReader(behavior))
+            {
+                do
+                {
+                    var schema = reader.GetSchemaTable();
+                    foreach (DataRow row in schema.Rows)
+                    {
+                        var type = (Type)row["DataType"];
+                        var name = TypeAliases.ContainsKey(type) ? TypeAliases[type] : type.FullName;
+                        var isNullable = (bool)row["AllowDBNull"] && NullableTypes.Contains(type);
+                        var collumnName = (string)row["ColumnName"];
+
+                        if (generatorBehavior.HasFlag(GeneratorBehavior.Comment) && !isFromMutiTables)
+                        {
+                            var comments = new[] { "DataTypeName", "IsUnique", "IsKey", "IsAutoIncrement", "IsReadOnly" }
+                                   .Select(s =>
+                                   {
+                                       if (row[s] is bool && ((bool)row[s]))
+                                           return s;
+                                       if (row[s] is string && !string.IsNullOrWhiteSpace((string)row[s]))
+                                           return string.Format(" {0} : {1} ", s, row[s]);
+                                       return null;
+                                   }).Where(w => w != null).ToArray();
+                            var sComment = string.Join(" , ", comments);
+
+                            builder.AppendFormat("		/// <summary>{0}</summary>{1}", sComment, Environment.NewLine);
+                        }
+
+                        if (generatorBehavior.HasFlag(GeneratorBehavior.DapperContrib) && !isFromMutiTables)
+                        {
+                            var isKey = (bool)row["IsKey"];
+                            var isAutoIncrement = (bool)row["IsAutoIncrement"];
+                            if (isKey && isAutoIncrement)
+                                builder.AppendLine("		[Dapper.Contrib.Extensions.Key]");
+                            if (isKey && !isAutoIncrement)
+                                builder.AppendLine("		[Dapper.Contrib.Extensions.ExplicitKey]");
+                            if (!isKey && isAutoIncrement)
+                                builder.AppendLine("		[Dapper.Contrib.Extensions.Computed]");
+                        }
+
+                        //builder.AppendLine(string.Format("public {0}{1} {2} {{ get; set; }}", name, isNullable ? "?" : string.Empty, collumnName));
+
+                        builder.AppendLine($"\t\t\t\t\t<div class=\"form-group row mb-4\">");
+
+                        builder.AppendLine($"\t\t\t\t\t\t<label class=\"col-sm-3 col-form-label\">{collumnName}</label>");
+                        builder.AppendLine($"\t\t\t\t\t\t<div class=\"col-sm-9\">");
+                        builder.AppendLine($"\t\t\t\t\t\t\t@Html.TextBoxFor(m => m.{collumnName}, new {{@class = \"form-control\" , @readonly = \"readonly\"}})");
+                        builder.AppendLine($"\t\t\t\t\t\t\t@Html.ValidationMessageFor(m => m.{collumnName}, null, new {{@class = \"text-danger\"}})");
+                        builder.AppendLine($"\t\t\t\t\t\t</div>");
+                        builder.AppendLine($"\t\t\t\t\t </div>");
+
+                    }
+
+                    //builder.AppendLine("	}");
+                    //builder.AppendLine();
+                } while (reader.NextResult());
+
+
+                builder.AppendLine($"\t\t\t\t\t<div class=\"form-group row mb-4\">");
+
+                builder.AppendLine($"\t\t\t\t\t\t<div class=\"col-md-10\">");
+                builder.AppendLine($"\t\t\t\t\t\t\t<a href=\"@Url.Action(\"Index\",\"{tableSelect}\")\" class=\"btn btn-primary\">Back to {tableSelect} List</a>");
+                builder.AppendLine($"\t\t\t\t\t\t</div>");
+                builder.AppendLine($"\t\t\t\t\t\t<div class=\"col-md-2\">");
+                builder.AppendLine($"\t\t\t\t\t\t\t <button type=\"submit\" class=\"btn btn-primary\">\r\n                                Save\r\n                            </button>");
+                builder.AppendLine($"\t\t\t\t\t\t</div>");
+
+                builder.AppendLine($"\t\t\t\t\t </div>");
+
+                builder.AppendLine($"\t\t\t\t}}");
+
+                builder.AppendLine($"</div>\r\n        </div>\r\n    </div>\r\n</div>");
+
+                builder.AppendLine($"@section scripts{{");
+                builder.AppendLine($"<script src=\"~/assets/libs/parsleyjs/parsley.min.js\"></script>");
+                builder.AppendLine($"<script src=\"~/assets/js/pages/form-validation.init.js\"></script>");
+                builder.AppendLine($"}}");
+                return builder.ToString();
+            }
         }
 
 

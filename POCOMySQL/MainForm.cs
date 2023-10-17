@@ -259,7 +259,7 @@ namespace POCOMySQL
                 tableSelect = textInfo.ToTitleCase(tablename);
 
                 tablename = string.Format("select * from {0}", tablename);
-                string dataBody = connection.GenerateClassModelToFile(tablename);
+                string dataBody = connection.GenerateClassDtoToFile(tablename);
 
                 StringBuilder stringBuilder = new StringBuilder();
                 stringBuilder.Append($"namespace {txtNameSpace.Text}.Dtos.{tableSelect}s");
@@ -272,7 +272,7 @@ namespace POCOMySQL
 
                 //
                 //txtClass.Text = stringBuilder.ToString();
-                string folder = "export//Dtos//" + tableSelect;
+                string folder = "export//1.Dtos//" + tableSelect;
                 if (!Directory.Exists(folder)) { Directory.CreateDirectory(folder); }
 
                 //Save file
@@ -313,7 +313,7 @@ namespace POCOMySQL
                 stringBuilder.Append(Environment.NewLine);
                 stringBuilder.Append("}");
 
-                string folder = "export//Models//" + tableSelect;
+                string folder = "export//2.Models//" + tableSelect;
 
                 if (!Directory.Exists(folder)) { Directory.CreateDirectory(folder); }
 
@@ -339,15 +339,15 @@ namespace POCOMySQL
             StringBuilder stringBuilderAutoMap = new StringBuilder();
 
             stringBuilderAutoMap.AppendLine($"CreateMap<{tableSelect}Dto, {nameCreateModel}>();");
-            stringBuilderAutoMap.AppendLine($"CreateMap<{nameCreateModel}Dto, {tableSelect}>();");
+            stringBuilderAutoMap.AppendLine($"CreateMap<{nameCreateModel}, {tableSelect}Dto>();");
 
             stringBuilderAutoMap.AppendLine($"CreateMap<{tableSelect}Dto, {nameViewModel}>();");
-            stringBuilderAutoMap.AppendLine($"CreateMap<{nameViewModel}Dto, {tableSelect}>();");
+            stringBuilderAutoMap.AppendLine($"CreateMap<{nameViewModel}, {tableSelect}Dto>();");
 
             stringBuilderAutoMap.AppendLine($"CreateMap<{tableSelect}Dto, {nameEditModel}>();");
-            stringBuilderAutoMap.AppendLine($"CreateMap<{nameEditModel}Dto, {tableSelect}>();");
+            stringBuilderAutoMap.AppendLine($"CreateMap<{nameEditModel}, {tableSelect}Dto>();");
 
-            string folderAutoMapperProfiles = "export//AutoMapperProfiles//" + tableSelect;
+            string folderAutoMapperProfiles = "export//6.AutoMapperProfiles//" + tableSelect;
 
             if (!Directory.Exists(folderAutoMapperProfiles)) { Directory.CreateDirectory(folderAutoMapperProfiles); }
 
@@ -379,6 +379,12 @@ namespace POCOMySQL
                 string dataBody = connection.GenerateClassServiceToFile(tablename);
 
                 StringBuilder stringBuilder = new StringBuilder();
+                stringBuilder.AppendLine($"using Dapper;");
+                stringBuilder.AppendLine($"using {txtNameSpace.Text}.Dtos.{tableSelect}s;");
+                stringBuilder.AppendLine($"using {txtNameSpace.Text}.Models;");
+                stringBuilder.AppendLine($"using {txtNameSpace.Text}.Models.{tableSelect}s;");
+                stringBuilder.AppendLine($"using {txtNameSpace.Text}.Repositories;");
+
                 stringBuilder.Append($"namespace {txtNameSpace.Text}.Services.{tableSelect}s");
                 stringBuilder.Append(Environment.NewLine);
                 stringBuilder.Append("{");
@@ -387,7 +393,7 @@ namespace POCOMySQL
                 stringBuilder.Append(Environment.NewLine);
                 stringBuilder.Append("}");
 
-                string folder = "export//Services//" + tableSelect;
+                string folder = "export//3.Services//" + tableSelect;
 
                 if (!Directory.Exists(folder)) { Directory.CreateDirectory(folder); }
 
@@ -410,13 +416,13 @@ namespace POCOMySQL
             StringBuilder stringDependence = new StringBuilder();
             stringDependence.AppendLine($" builder.Services.AddTransient<I{tableSelect}Service , {tableSelect}Service>();");
 
-            string folderDependence = "export//Dependence//" + tableSelect;
+            string folderDependence = "export//4.Dependence//" + tableSelect;
 
             if (!Directory.Exists(folderDependence)) { Directory.CreateDirectory(folderDependence); }
 
             //Save file
 
-            string fileDependence = Path.Combine(folderAutoMapperProfiles, $"{tableSelect}Dependence.cs");
+            string fileDependence = Path.Combine(folderDependence, $"{tableSelect}Dependence.cs");
             if (File.Exists(fileDependence))
             {
                 File.Delete(fileDependence);
@@ -443,6 +449,16 @@ namespace POCOMySQL
                 string dataBody = connection.GenerateClassControllerToFile(tablename);
 
                 StringBuilder stringBuilder = new StringBuilder();
+                stringBuilder.AppendLine($"using AutoMapper;");
+                stringBuilder.AppendLine($"using System.Security.Claims;");
+                stringBuilder.AppendLine($"using Microsoft.AspNetCore.Mvc;");
+                stringBuilder.AppendLine($"using Microsoft.AspNetCore.Authorization;");
+
+                stringBuilder.AppendLine($"using {txtNameSpace.Text}.Dtos.{tableSelect}s;");
+                stringBuilder.AppendLine($"using {txtNameSpace.Text}.Models;");
+                stringBuilder.AppendLine($"using {txtNameSpace.Text}.Models.{tableSelect}s;");
+                stringBuilder.AppendLine($"using {txtNameSpace.Text}.Services.{tableSelect}s;");
+
                 stringBuilder.Append($"namespace {txtNameSpace.Text}.Controllers");
                 stringBuilder.Append(Environment.NewLine);
                 stringBuilder.Append("{");
@@ -451,7 +467,7 @@ namespace POCOMySQL
                 stringBuilder.Append(Environment.NewLine);
                 stringBuilder.Append("}");
 
-                string folder = "export//Controller//" + tableSelect;
+                string folder = "export//5.Controller//" + tableSelect;
 
                 if (!Directory.Exists(folder)) { Directory.CreateDirectory(folder); }
 
@@ -469,13 +485,7 @@ namespace POCOMySQL
                 }
             }
             //Folder View
-
-
-        }
-
-        private void btnGenerateDtos_Click(object sender, EventArgs e)
-        {
-            var tableSelect = "";
+            //Create
             using (MySqlConnection connection = new MySqlConnection(strConnection))
             {
                 connection.Open();
@@ -487,24 +497,107 @@ namespace POCOMySQL
                 tableSelect = textInfo.ToTitleCase(tablename);
 
                 tablename = string.Format("select * from {0}", tablename);
-                string dataBody = connection.GenerateClassDtoToFile(tablename);
+                string dataBody = connection.GenerateClassCreateCSHtmlToFile(tablename);
 
                 StringBuilder stringBuilder = new StringBuilder();
-                stringBuilder.Append($"namespace {txtNameSpace.Text}.Dtos.{tableSelect}s");
-                stringBuilder.Append(Environment.NewLine);
-                stringBuilder.Append("{");
-                stringBuilder.Append(Environment.NewLine);
-                stringBuilder.Append(dataBody);
-                stringBuilder.Append(Environment.NewLine);
-                stringBuilder.Append("}");
-                txtClass.Text = stringBuilder.ToString();
-                //Create folder and save file
+                stringBuilder.AppendLine($"@model {txtNameSpace.Text}.Models.{tableSelect}s.Create{tableSelect}Model");
 
-                connection.Close();
+                stringBuilder.AppendLine(dataBody);
+
+                string folder = "export//6.View//" + tableSelect;
+
+                if (!Directory.Exists(folder)) { Directory.CreateDirectory(folder); }
+
+                //Save file
+
+                string filePath = Path.Combine(folder, $"Create{tableSelect}.cshtml");
+                if (File.Exists(filePath))
+                {
+                    File.Delete(filePath);
+                }
+                using (FileStream fs = new FileStream(filePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None)) { }
+                using (StreamWriter sr = new StreamWriter(filePath, true))
+                {
+                    sr.WriteLine(stringBuilder.ToString());
+                }
             }
-            Clipboard.Clear();    //Clear if any old value is there in Clipboard        
-            Clipboard.SetText(txtClass.Text); //Copy text to Clipboa
+
+            //Edit
+            using (MySqlConnection connection = new MySqlConnection(strConnection))
+            {
+                connection.Open();
+                string tablename = cbTableName.SelectedValue.ToString().ToLower();
+                if (string.IsNullOrEmpty(tablename))
+                    tablename = "customers";
+
+                TextInfo textInfo = new CultureInfo("en-US", false).TextInfo;
+                tableSelect = textInfo.ToTitleCase(tablename);
+
+                tablename = string.Format("select * from {0}", tablename);
+                string dataBody = connection.GenerateClassCreateCSHtmlToFile(tablename);
+
+                StringBuilder stringBuilder = new StringBuilder();
+                stringBuilder.AppendLine($"@model {txtNameSpace.Text}.Models.{tableSelect}s.Edit{tableSelect}Model");
+
+                stringBuilder.AppendLine(dataBody);
+
+                string folder = "export//6.View//" + tableSelect;
+
+                if (!Directory.Exists(folder)) { Directory.CreateDirectory(folder); }
+
+                //Save file
+
+                string filePath = Path.Combine(folder, $"Edit{tableSelect}.cshtml");
+                if (File.Exists(filePath))
+                {
+                    File.Delete(filePath);
+                }
+                using (FileStream fs = new FileStream(filePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None)) { }
+                using (StreamWriter sr = new StreamWriter(filePath, true))
+                {
+                    sr.WriteLine(stringBuilder.ToString());
+                }
+            }
+
+            //View
+            using (MySqlConnection connection = new MySqlConnection(strConnection))
+            {
+                connection.Open();
+                string tablename = cbTableName.SelectedValue.ToString().ToLower();
+                if (string.IsNullOrEmpty(tablename))
+                    tablename = "customers";
+
+                TextInfo textInfo = new CultureInfo("en-US", false).TextInfo;
+                tableSelect = textInfo.ToTitleCase(tablename);
+
+                tablename = string.Format("select * from {0}", tablename);
+                string dataBody = connection.GenerateClassViewCSHtmlToFile(tablename);
+
+                StringBuilder stringBuilder = new StringBuilder();
+                stringBuilder.AppendLine($"@model {txtNameSpace.Text}.Dtos.{tableSelect}s.{tableSelect}Dto");
+
+                stringBuilder.AppendLine(dataBody);
+
+                string folder = "export//6.View//" + tableSelect;
+
+                if (!Directory.Exists(folder)) { Directory.CreateDirectory(folder); }
+
+                //Save file
+
+                string filePath = Path.Combine(folder, $"View{tableSelect}.cshtml");
+                if (File.Exists(filePath))
+                {
+                    File.Delete(filePath);
+                }
+                using (FileStream fs = new FileStream(filePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None)) { }
+                using (StreamWriter sr = new StreamWriter(filePath, true))
+                {
+                    sr.WriteLine(stringBuilder.ToString());
+                }
+            }
+
         }
+
 
     }
 }

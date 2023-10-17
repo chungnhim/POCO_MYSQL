@@ -205,7 +205,7 @@
             this.btnGenerateDtos.TabIndex = 2;
             this.btnGenerateDtos.Text = "Generate Dtos";
             this.btnGenerateDtos.UseVisualStyleBackColor = true;
-            this.btnGenerateDtos.Click += new System.EventHandler(this.btnGenerateDtos_Click);
+           
             // 
             // btnGenerateModel
             // 
