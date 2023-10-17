@@ -44,8 +44,6 @@
             this.btnExportFile = new System.Windows.Forms.Button();
             this.txtNameSpace = new System.Windows.Forms.TextBox();
             this.label2 = new System.Windows.Forms.Label();
-            this.btnGenerateDtos = new System.Windows.Forms.Button();
-            this.btnGenerateModel = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // cbTableName
@@ -173,7 +171,7 @@
             // 
             // btnExportFile
             // 
-            this.btnExportFile.Location = new System.Drawing.Point(741, 222);
+            this.btnExportFile.Location = new System.Drawing.Point(741, 135);
             this.btnExportFile.Name = "btnExportFile";
             this.btnExportFile.Size = new System.Drawing.Size(176, 23);
             this.btnExportFile.TabIndex = 12;
@@ -197,25 +195,6 @@
             this.label2.TabIndex = 1;
             this.label2.Text = "Name Space";
             // 
-            // btnGenerateDtos
-            // 
-            this.btnGenerateDtos.Location = new System.Drawing.Point(741, 148);
-            this.btnGenerateDtos.Name = "btnGenerateDtos";
-            this.btnGenerateDtos.Size = new System.Drawing.Size(143, 23);
-            this.btnGenerateDtos.TabIndex = 2;
-            this.btnGenerateDtos.Text = "Generate Dtos";
-            this.btnGenerateDtos.UseVisualStyleBackColor = true;
-           
-            // 
-            // btnGenerateModel
-            // 
-            this.btnGenerateModel.Location = new System.Drawing.Point(741, 177);
-            this.btnGenerateModel.Name = "btnGenerateModel";
-            this.btnGenerateModel.Size = new System.Drawing.Size(143, 23);
-            this.btnGenerateModel.TabIndex = 2;
-            this.btnGenerateModel.Text = "Generate Model";
-            this.btnGenerateModel.UseVisualStyleBackColor = true;
-            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -232,8 +211,6 @@
             this.Controls.Add(this.cmdGenerateInsert);
             this.Controls.Add(this.cmdConnectDatabase);
             this.Controls.Add(this.txtClass);
-            this.Controls.Add(this.btnGenerateModel);
-            this.Controls.Add(this.btnGenerateDtos);
             this.Controls.Add(this.cmdGenerateClass);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
@@ -264,8 +241,6 @@
         private System.Windows.Forms.Button btnExportFile;
         private System.Windows.Forms.TextBox txtNameSpace;
         private System.Windows.Forms.Label label2;
-        private System.Windows.Forms.Button btnGenerateDtos;
-        private System.Windows.Forms.Button btnGenerateModel;
     }
 }
 
