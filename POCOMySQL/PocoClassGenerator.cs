@@ -1103,6 +1103,137 @@ namespace POCOMySQL
             }
         }
 
+        public static string GenerateClassEditCSHtmlToFile(this IDbConnection connection, string sql, string className = null, GeneratorBehavior generatorBehavior = GeneratorBehavior.Default)
+        {
+            if (connection.State != ConnectionState.Open) connection.Open();
+
+            var builder = new StringBuilder();
+            var tableSelect = "";
+            //Get Table Name
+            //Fix : [When View using CommandBehavior.KeyInfo will get duplicate columns ¡P Issue #8 ¡P shps951023/PocoClassGenerator](https://github.com/shps951023/PocoClassGenerator/issues/8 )
+            var isFromMutiTables = false;
+            using (var command = connection.CreateCommand(sql))
+            using (var reader = command.ExecuteReader(CommandBehavior.KeyInfo | CommandBehavior.SingleRow))
+            {
+                var tables = reader.GetSchemaTable().Select().Select(s => s["BaseTableName"] as string).Distinct();
+                var tableName = string.IsNullOrWhiteSpace(className) ? tables.First() ?? "Info" : className;
+
+                TextInfo textInfo = new CultureInfo("en-US", false).TextInfo;
+                tableName = textInfo.ToTitleCase(tableName);
+                tableSelect = tableName;
+                isFromMutiTables = tables.Count() > 1;
+
+                //if (generatorBehavior.HasFlag(GeneratorBehavior.DapperContrib) && !isFromMutiTables)
+                //builder.AppendFormat("	[Dapper.Contrib.Extensions.Table(\"{0}\")]{1}", tableName, Environment.NewLine);
+                //builder.AppendFormat("	public class {0}Dto{1}", tableName.Replace(" ", ""), Environment.NewLine);
+                //builder.AppendLine("	{");
+            }
+
+            //builder.AppendLine($"@model EVSystem.Admin.Portal.Models.Stations.CreateStationModel");
+
+            builder.AppendLine($"@{{");
+            builder.AppendLine($"\tViewBag.Title = \"Admin Portal {tableSelect}\";");
+            builder.AppendLine($"\tViewBag.pageTitle = \"{tableSelect}\";");
+            builder.AppendLine($"\tViewBag.pTitle = \"Create {tableSelect} Information\";");
+            builder.AppendLine($"\tLayout = \"~/Views/Shared/_Layout.cshtml\";");
+            builder.AppendLine($"}}");
+
+            builder.AppendLine($"<div class=\"row\">");
+            builder.AppendLine($"\t<div class=\"col-lg-12\">");
+            builder.AppendLine($"\t\t<div class=\"card\">");
+            builder.AppendLine($"\t\t\t<div class=\"card-body\">");
+            builder.AppendLine($"\t\t\t\t<div class=\"form-group row mb-4\">\r\n                    <label class=\"card-title col-sm-6 col-form-label\">{tableSelect} Information</label>\r\n                </div>");
+            builder.AppendLine($"\t\t\t\t@using (Html.BeginForm(\"Edit{tableSelect}\", \"{tableSelect}\", FormMethod.Post, new {{ id = \"FormCreate{tableSelect}Information\", @class = \"needs-validation\", novalidate = \"novalidate\" }}))");
+            builder.AppendLine($"\t\t\t\t{{");
+            builder.AppendLine($"\t\t\t\t\t@Html.AntiForgeryToken()");
+
+
+            //Get Columns 
+            var behavior = isFromMutiTables ? (CommandBehavior.SchemaOnly | CommandBehavior.SingleRow) : (CommandBehavior.KeyInfo | CommandBehavior.SingleRow);
+
+            using (var command = connection.CreateCommand(sql))
+            using (var reader = command.ExecuteReader(behavior))
+            {
+                do
+                {
+                    var schema = reader.GetSchemaTable();
+                    foreach (DataRow row in schema.Rows)
+                    {
+                        var type = (Type)row["DataType"];
+                        var name = TypeAliases.ContainsKey(type) ? TypeAliases[type] : type.FullName;
+                        var isNullable = (bool)row["AllowDBNull"] && NullableTypes.Contains(type);
+                        var collumnName = (string)row["ColumnName"];
+
+                        if (generatorBehavior.HasFlag(GeneratorBehavior.Comment) && !isFromMutiTables)
+                        {
+                            var comments = new[] { "DataTypeName", "IsUnique", "IsKey", "IsAutoIncrement", "IsReadOnly" }
+                                   .Select(s =>
+                                   {
+                                       if (row[s] is bool && ((bool)row[s]))
+                                           return s;
+                                       if (row[s] is string && !string.IsNullOrWhiteSpace((string)row[s]))
+                                           return string.Format(" {0} : {1} ", s, row[s]);
+                                       return null;
+                                   }).Where(w => w != null).ToArray();
+                            var sComment = string.Join(" , ", comments);
+
+                            builder.AppendFormat("		/// <summary>{0}</summary>{1}", sComment, Environment.NewLine);
+                        }
+
+                        if (generatorBehavior.HasFlag(GeneratorBehavior.DapperContrib) && !isFromMutiTables)
+                        {
+                            var isKey = (bool)row["IsKey"];
+                            var isAutoIncrement = (bool)row["IsAutoIncrement"];
+                            if (isKey && isAutoIncrement)
+                                builder.AppendLine("		[Dapper.Contrib.Extensions.Key]");
+                            if (isKey && !isAutoIncrement)
+                                builder.AppendLine("		[Dapper.Contrib.Extensions.ExplicitKey]");
+                            if (!isKey && isAutoIncrement)
+                                builder.AppendLine("		[Dapper.Contrib.Extensions.Computed]");
+                        }
+
+                        //builder.AppendLine(string.Format("public {0}{1} {2} {{ get; set; }}", name, isNullable ? "?" : string.Empty, collumnName));
+
+                        builder.AppendLine($"\t\t\t\t\t<div class=\"form-group row mb-4\">");
+
+                        builder.AppendLine($"\t\t\t\t\t\t<label class=\"col-sm-3 col-form-label\">{collumnName}</label>");
+                        builder.AppendLine($"\t\t\t\t\t\t<div class=\"col-sm-9\">");
+                        builder.AppendLine($"\t\t\t\t\t\t\t@Html.TextBoxFor(m => m.{collumnName}, new {{@class = \"form-control\"}})");
+                        builder.AppendLine($"\t\t\t\t\t\t\t@Html.ValidationMessageFor(m => m.{collumnName}, null, new {{@class = \"text-danger\"}})");
+                        builder.AppendLine($"\t\t\t\t\t\t</div>");
+                        builder.AppendLine($"\t\t\t\t\t </div>");
+
+                    }
+
+                    //builder.AppendLine("	}");
+                    //builder.AppendLine();
+                } while (reader.NextResult());
+
+
+                builder.AppendLine($"\t\t\t\t\t<div class=\"form-group row mb-4\">");
+
+                builder.AppendLine($"\t\t\t\t\t\t<div class=\"col-md-10\">");
+                builder.AppendLine($"\t\t\t\t\t\t\t<a href=\"@Url.Action(\"Index\",\"{tableSelect}\")\" class=\"btn btn-primary\">Back to {tableSelect} List</a>");
+                builder.AppendLine($"\t\t\t\t\t\t</div>");
+                builder.AppendLine($"\t\t\t\t\t\t<div class=\"col-md-2\">");
+                builder.AppendLine($"\t\t\t\t\t\t\t <button type=\"submit\" class=\"btn btn-primary\">\r\n                                Save\r\n                            </button>");
+                builder.AppendLine($"\t\t\t\t\t\t</div>");
+
+                builder.AppendLine($"\t\t\t\t\t </div>");
+
+                builder.AppendLine($"\t\t\t\t}}");
+
+                builder.AppendLine($"</div>\r\n        </div>\r\n    </div>\r\n</div>");
+
+                builder.AppendLine($"@section scripts{{");
+                builder.AppendLine($"<script src=\"~/assets/libs/parsleyjs/parsley.min.js\"></script>");
+                builder.AppendLine($"<script src=\"~/assets/js/pages/form-validation.init.js\"></script>");
+                builder.AppendLine($"}}");
+                return builder.ToString();
+            }
+        }
+
+
         public static string GenerateClassViewCSHtmlToFile(this IDbConnection connection, string sql, string className = null, GeneratorBehavior generatorBehavior = GeneratorBehavior.Default)
         {
             if (connection.State != ConnectionState.Open) connection.Open();
@@ -1143,7 +1274,7 @@ namespace POCOMySQL
             builder.AppendLine($"\t\t<div class=\"card\">");
             builder.AppendLine($"\t\t\t<div class=\"card-body\">");
             builder.AppendLine($"\t\t\t\t<div class=\"form-group row mb-4\">\r\n                    <label class=\"card-title col-sm-6 col-form-label\">{tableSelect} Information</label>\r\n                </div>");
-            builder.AppendLine($"\t\t\t\t@using (Html.BeginForm(\"Create{tableSelect}\", \"{tableSelect}\", FormMethod.Post, new {{ id = \"FormCreate{tableSelect}Information\", @class = \"needs-validation\", novalidate = \"novalidate\" }}))");
+            builder.AppendLine($"\t\t\t\t@using (Html.BeginForm(\"View{tableSelect}\", \"{tableSelect}\", FormMethod.Post, new {{ id = \"FormCreate{tableSelect}Information\", @class = \"needs-validation\", novalidate = \"novalidate\" }}))");
             builder.AppendLine($"\t\t\t\t{{");
             builder.AppendLine($"\t\t\t\t\t@Html.AntiForgeryToken()");
 
@@ -1215,10 +1346,6 @@ namespace POCOMySQL
                 builder.AppendLine($"\t\t\t\t\t\t<div class=\"col-md-10\">");
                 builder.AppendLine($"\t\t\t\t\t\t\t<a href=\"@Url.Action(\"Index\",\"{tableSelect}\")\" class=\"btn btn-primary\">Back to {tableSelect} List</a>");
                 builder.AppendLine($"\t\t\t\t\t\t</div>");
-                builder.AppendLine($"\t\t\t\t\t\t<div class=\"col-md-2\">");
-                builder.AppendLine($"\t\t\t\t\t\t\t <button type=\"submit\" class=\"btn btn-primary\">\r\n                                Save\r\n                            </button>");
-                builder.AppendLine($"\t\t\t\t\t\t</div>");
-
                 builder.AppendLine($"\t\t\t\t\t </div>");
 
                 builder.AppendLine($"\t\t\t\t}}");

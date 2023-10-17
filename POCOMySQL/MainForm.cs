@@ -534,7 +534,7 @@ namespace POCOMySQL
                 tableSelect = textInfo.ToTitleCase(tablename);
 
                 tablename = string.Format("select * from {0}", tablename);
-                string dataBody = connection.GenerateClassCreateCSHtmlToFile(tablename);
+                string dataBody = connection.GenerateClassEditCSHtmlToFile(tablename);
 
                 StringBuilder stringBuilder = new StringBuilder();
                 stringBuilder.AppendLine($"@model {txtNameSpace.Text}.Models.{tableSelect}s.Edit{tableSelect}Model");
