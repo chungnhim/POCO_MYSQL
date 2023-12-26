@@ -612,8 +612,7 @@ namespace POCOMySQL
                 string dataBody = connection.GenerateClassIndexCSHtmlToFile(tablename);
 
                 StringBuilder stringBuilder = new StringBuilder();
-                //stringBuilder.AppendLine($"@model {txtNameSpace.Text}.Dtos.{tableSelect}s.{tableSelect}Dto");
-
+                
                 stringBuilder.AppendLine(dataBody);
 
                 string folder = "export//6.View//" + tableSelect;
