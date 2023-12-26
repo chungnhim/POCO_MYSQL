@@ -596,6 +596,44 @@ namespace POCOMySQL
                 }
             }
 
+            //index
+
+            using (MySqlConnection connection = new MySqlConnection(strConnection))
+            {
+                connection.Open();
+                string tablename = cbTableName.SelectedValue.ToString().ToLower();
+                if (string.IsNullOrEmpty(tablename))
+                    tablename = "customers";
+
+                TextInfo textInfo = new CultureInfo("en-US", false).TextInfo;
+                tableSelect = textInfo.ToTitleCase(tablename);
+
+                tablename = string.Format("select * from {0}", tablename);
+                string dataBody = connection.GenerateClassIndexCSHtmlToFile(tablename);
+
+                StringBuilder stringBuilder = new StringBuilder();
+                //stringBuilder.AppendLine($"@model {txtNameSpace.Text}.Dtos.{tableSelect}s.{tableSelect}Dto");
+
+                stringBuilder.AppendLine(dataBody);
+
+                string folder = "export//6.View//" + tableSelect;
+
+                if (!Directory.Exists(folder)) { Directory.CreateDirectory(folder); }
+
+                //Save file
+
+                string filePath = Path.Combine(folder, $"index.cshtml");
+                if (File.Exists(filePath))
+                {
+                    File.Delete(filePath);
+                }
+                using (FileStream fs = new FileStream(filePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None)) { }
+                using (StreamWriter sr = new StreamWriter(filePath, true))
+                {
+                    sr.WriteLine(stringBuilder.ToString());
+                }
+            }
+
         }
 
 

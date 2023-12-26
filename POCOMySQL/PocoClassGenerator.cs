@@ -1360,7 +1360,116 @@ namespace POCOMySQL
             }
         }
 
+        public static string GenerateClassIndexCSHtmlToFile(this IDbConnection connection, string sql, string className = null, GeneratorBehavior generatorBehavior = GeneratorBehavior.Default)
+        {
+            if (connection.State != ConnectionState.Open) connection.Open();
+            TextInfo textInfo = new CultureInfo("en-US", false).TextInfo;
+            var builder = new StringBuilder();
+            var tableSelect = "";
+            //Get Table Name
+            //Fix : [When View using CommandBehavior.KeyInfo will get duplicate columns ¡P Issue #8 ¡P shps951023/PocoClassGenerator](https://github.com/shps951023/PocoClassGenerator/issues/8 )
+            var isFromMutiTables = false;
+            using (var command = connection.CreateCommand(sql))
+            using (var reader = command.ExecuteReader(CommandBehavior.KeyInfo | CommandBehavior.SingleRow))
+            {
+                var tables = reader.GetSchemaTable().Select().Select(s => s["BaseTableName"] as string).Distinct();
+                var tableName = string.IsNullOrWhiteSpace(className) ? tables.First() ?? "Info" : className;
 
+                
+                tableName = textInfo.ToTitleCase(tableName);
+                tableSelect = tableName;
+                isFromMutiTables = tables.Count() > 1;
+
+                //if (generatorBehavior.HasFlag(GeneratorBehavior.DapperContrib) && !isFromMutiTables)
+                //builder.AppendFormat("	[Dapper.Contrib.Extensions.Table(\"{0}\")]{1}", tableName, Environment.NewLine);
+                //builder.AppendFormat("	public class {0}Dto{1}", tableName.Replace(" ", ""), Environment.NewLine);
+                //builder.AppendLine("	{");
+            }
+
+            //builder.AppendLine($"@model EVSystem.Admin.Portal.Models.Stations.CreateStationModel");
+
+            //System.Text.Json.JsonNamingPolicy.CamelCase.ConvertName(someString);
+
+            builder.AppendLine($"@{{\r\n    ViewBag.Title = \"Merchant Portal {tableSelect}\";\r\n    ViewBag.pageTitle = \"{tableSelect}\";\r\n    ViewBag.pTitle = \"{tableSelect} List\";\r\n    Layout = \"~/Views/Shared/_Layout.cshtml\";\r\n}}\r\n\r\n@section styles{{\r\n  \r\n}}\r\n\r\n@Html.AntiForgeryToken()\r\n<div class=\"row\">\r\n    <div class=\"col-12\">\r\n        <div class=\"card\">\r\n            <div class=\"card-body\">\r\n                <div class=\"row\">\r\n                    <div class=\"col-md-6\">\r\n                        <div class=\"form-group\">\r\n                            <label for=\"companyRegNo-input\">Search Name</label>\r\n                            <input type=\"text\" class=\"form-control\" id=\"search\">\r\n                        </div>\r\n                    </div>\r\n                    <div class=\"col-md-6\">\r\n                        <div class=\"form-group\">\r\n                        </div>\r\n                    </div>\r\n                </div>\r\n                <div class=\"row\">\r\n                    <div class=\"col-md-6\">\r\n                        <div class=\"form-group\">\r\n                            <label>From Date</label>\r\n                            <div class=\"input-group\">\r\n                                <input type=\"text\" id=\"FromDate\" name=\"FromDate\" class=\"form-control\" data-date-format=\"dd M yyyy\" data-provide=\"datepicker\" data-date-autoclose=\"true\" value=\"@string.Format(\"{{0:dd MMM yyyy}}\", DateTime.Now.AddDays(-30))\">\r\n                                <div class=\"input-group-append\">\r\n                                    <span class=\"input-group-text\"><i class=\"mdi mdi-calendar\"></i></span>\r\n                                </div>\r\n                            </div>\r\n                        </div>\r\n                    </div>\r\n                    <div class=\"col-md-6\">\r\n                        <div class=\"form-group\">\r\n                            <label>To Date</label>\r\n                            <div class=\"input-group\">\r\n                                <input type=\"text\" id=\"ToDate\" name=\"ToDate\" class=\"form-control\" data-date-format=\"dd M yyyy\" data-provide=\"datepicker\" data-date-autoclose=\"true\" value=\"@string.Format(\"{{0:dd MMM yyyy}}\", DateTime.Now)\">\r\n                                <div class=\"input-group-append\">\r\n                                    <span class=\"input-group-text\"><i class=\"mdi mdi-calendar\"></i></span>\r\n                                </div>\r\n                            </div>\r\n                        </div>\r\n                    </div>\r\n                </div>\r\n                <div class=\"row\">\r\n                    <label>&nbsp;</label>\r\n                    <div class=\"col-md-12\">\r\n                        <input id=\"btnSubmit\" type=\"submit\" value=\"Search\" class=\"btn btn-primary\">\r\n                        <a href=\"@Url.Action(\"Create{tableSelect}\",\"{tableSelect}\")\" class=\"btn btn-warning\">Add {tableSelect}</a>\r\n                    </div>\r\n                </div>\r\n            </div>\r\n        </div>\r\n    </div> <!-- end col -->\r\n</div> <!-- end row -->");
+
+            builder.AppendLine($"<div class=\"row\">\r\n    <div class=\"col-12\">\r\n        <div class=\"card\">\r\n            <div class=\"card-body\">\r\n                <table id=\"ListTableView\" class=\"table  table-striped table-bordered dt-responsive nowrap dtr-inline collapsed\" style=\"border-collapse: collapse; border-spacing: 0; width: 100%;\">\r\n                    <thead>\r\n                        <tr>");
+            //Get Columns 
+            var behavior = isFromMutiTables ? (CommandBehavior.SchemaOnly | CommandBehavior.SingleRow) : (CommandBehavior.KeyInfo | CommandBehavior.SingleRow);
+           
+          
+            using (var command = connection.CreateCommand(sql))
+            using (var reader = command.ExecuteReader(behavior))
+            {
+                StringBuilder bodyTableColumn = new StringBuilder();
+                int iCountColumn = 0;
+                do
+                {
+                    var schema = reader.GetSchemaTable();
+                    foreach (DataRow row in schema.Rows)
+                    {
+                        var type = (Type)row["DataType"];
+                        var name = TypeAliases.ContainsKey(type) ? TypeAliases[type] : type.FullName;
+                        var isNullable = (bool)row["AllowDBNull"] && NullableTypes.Contains(type);
+                        var collumnName = (string)row["ColumnName"];
+
+                        if (generatorBehavior.HasFlag(GeneratorBehavior.Comment) && !isFromMutiTables)
+                        {
+                            var comments = new[] { "DataTypeName", "IsUnique", "IsKey", "IsAutoIncrement", "IsReadOnly" }
+                                   .Select(s =>
+                                   {
+                                       if (row[s] is bool && ((bool)row[s]))
+                                           return s;
+                                       if (row[s] is string && !string.IsNullOrWhiteSpace((string)row[s]))
+                                           return string.Format(" {0} : {1} ", s, row[s]);
+                                       return null;
+                                   }).Where(w => w != null).ToArray();
+                            var sComment = string.Join(" , ", comments);
+
+                            builder.AppendFormat("		/// <summary>{0}</summary>{1}", sComment, Environment.NewLine);
+                        }
+
+                        if (generatorBehavior.HasFlag(GeneratorBehavior.DapperContrib) && !isFromMutiTables)
+                        {
+                            var isKey = (bool)row["IsKey"];
+                            var isAutoIncrement = (bool)row["IsAutoIncrement"];
+                            if (isKey && isAutoIncrement)
+                                builder.AppendLine("		[Dapper.Contrib.Extensions.Key]");
+                            if (isKey && !isAutoIncrement)
+                                builder.AppendLine("		[Dapper.Contrib.Extensions.ExplicitKey]");
+                            if (!isKey && isAutoIncrement)
+                                builder.AppendLine("		[Dapper.Contrib.Extensions.Computed]");
+                        }
+
+                        //builder.AppendLine(string.Format("public {0}{1} {2} {{ get; set; }}", name, isNullable ? "?" : string.Empty, collumnName));
+
+                        builder.AppendLine($"\t\t\t\t\t\t<th>{collumnName}</th>");
+
+                        bodyTableColumn.AppendLine($"\t\t\t\t\t\t{{ \"data\": \"{Char.ToLowerInvariant(collumnName[0]) + collumnName.Substring(1)}\", \"orderable\": false }},");
+
+                        iCountColumn = iCountColumn + 1;
+                    }
+
+                    //builder.AppendLine("	}");
+                    //builder.AppendLine();
+                } while (reader.NextResult());
+
+                builder.AppendLine($"\t\t\t\t\t\t<th>Action</th>");
+                builder.AppendLine($"</tr>\r\n                    </thead>\r\n                    <tbody>\r\n                    </tbody>\r\n                </table>\r\n\r\n            </div>\r\n        </div>\r\n    </div> <!-- end col -->\r\n</div> <!-- end row -->");
+
+                builder.AppendLine($"@section scripts{{\r\n\r\n\r\n    <script type=\"text/javascript\">\r\n\r\n        $(document).ready(function () {{\r\n            var search = $(\"#search\").val();\r\n            var fromDate = $(\"#FromDate\").val();\r\n            var toDate = $(\"#ToDate\").val();\r\n            var table = $('#ListTableView').DataTable({{\r\n                \"scrollX\": true,\r\n                \"responsive\": false,\r\n                \"bAutoWidth\": true,\r\n                \"autoWidth\": true,\r\n                \"processing\": false,\r\n                \"serverSide\": true,\r\n                \"stateSave\": false,\r\n                \"paging\": true,\r\n                \"searching\": false,\r\n                dom: \"<'row'<'col-md-6'B><'col-md-6'l>><'row'<'col-md-12't>><'row'<'col-md-12'p>>\",\r\n                lengthMenu: [\r\n                    [10, 25, 50, 100],\r\n                    ['10 rows', '25 rows', '50 rows', '100 rows']\r\n                ],\r\n                \"language\": {{\r\n                    \"lengthMenu\": \"Show _MENU_ entries\",\r\n                    \"info\": \"Showing _START_ to _END_ of _TOTAL_\",\r\n                    \"infoEmpty\": \"Showing 0 to _END_ of _TOTAL_\",\r\n                    \"zeroRecords\": \"No data available in table\",\r\n                    \"paginate\": {{\r\n                        \"first\": \"First\",\r\n                        \"last\": \"Last\",\r\n                        \"next\": \"Next\",\r\n                        \"previous\": \"Previous\"\r\n                    }}\r\n                }},\r\n                \"order\": [[0, \"asc\"]],\r\n                \"ajax\": {{\r\n                    \"url\": \"/{tableSelect}/{tableSelect}Search\",\r\n                    \"type\": \"GET\",\r\n                    \"data\": function (d) {{\r\n                        d.fromDate = fromDate;\r\n                        d.toDate = toDate;\r\n                        d.search = search;\r\n                    }},\r\n                    \"dataSrc\": function (res) {{\r\n                        console.log(res);\r\n                        var count = res.recordsTotal;\r\n                        console.log(res.recordsTotal);\r\n                        console.log(res.data);\r\n                      \r\n                        return res.data;\r\n                    }},\r\n                    \"error\": function (xhr, error, thrown) {{\r\n                        console.log(error);                        \r\n                    }}\r\n                }},\r\n                \"columns\": [");
+                //Add column
+
+                builder.AppendLine(bodyTableColumn.ToString());
+
+                builder.AppendLine($" ],\r\n                'columnDefs': [");
+                //Add content of column
+                builder.AppendLine($"{{\r\n                        targets: {iCountColumn},\r\n                        \"render\": function (data, type, full, meta) {{\r\n                            var idSearch = full.id;\r\n                            var htmlReturn = '';\r\n\r\n                            htmlReturn = htmlReturn + '<a href=\"/{tableSelect}/View{tableSelect}?id=' + idSearch + '\" class=\"btn btn-default btn-xs\" aria-expanded=\"false\"  data-toggle=\"tooltip\" data-placement=\"top\" title=\"View Station\"><i class=\"fa fa-eye fa-2\" aria-hidden=\"true\"></i></a>';\r\n                            htmlReturn = htmlReturn + '<a href=\"/{tableSelect}/Edit{tableSelect}?id=' + idSearch + '\" class=\"btn btn-default btn-xs\" aria-expanded=\"false\"  data-toggle=\"tooltip\" data-placement=\"top\" title=\"Edit Station\"><i class=\"fa fa-edit fa-2\" aria-hidden=\"true\"></i></a>';\r\n\r\n                            return htmlReturn;\r\n                        }}\r\n                    }}\r\n                ]\r\n\r\n            }});");
+
+
+                builder.AppendLine($"$('#btnSubmit').click(function () {{\r\n                search = $(\"#search\").val();\r\n                fromDate = $(\"#FromDate\").val();\r\n                toDate = $(\"#ToDate\").val();             \r\n                table.draw();\r\n                return false;\r\n            }});\r\n\r\n        }});\r\n    </script>\r\n\r\n}}");
+                return builder.ToString();
+            }
+        }
 
         #endregion
     }
